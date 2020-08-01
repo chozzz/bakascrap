@@ -10,61 +10,122 @@ import mysql.connector
 
 class MangascrapersPipeline:
     def process_item(self, item, spider):
+        print(":: CLASS = " + item.__class__.__name__)
         return item
 
-
-
 class MangabookPipeline(object):
+
     def __init__(self):
         self.create_connection()
         self.create_table()
+
+    def process_item(self, item, spider):
+        if item.__class__.__name__ == "MangabookItem":
+            self.store_db(item)
+
+        return item
 
     def create_connection(self):
         self.conn = mysql.connector.connect(
             host = 'localhost',
             user = 'choz',
             passwd = '123456',
-            database = 'raw_mangabooks'
+            database = 'mangascrapers'
         )
         self.curr = self.conn.cursor()
 
     def create_table(self):
-        self.curr.execute("""CREATE TABLE (IF NOT EXISTS) raw_mangabooks (
+        self.curr.execute("""CREATE TABLE IF NOT EXISTS raw_mangabooks (
             `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             `source` varchar(255) NOT NULL,
             `uri` varchar(255) NOT NULL,
-            `name` varchar(255) NOT NULL,
-            `alternative_name` varchar(255) DEFAULT NULL,
-            `rating` tinyint(3) unsigned NOT NULL,
-            `author` varchar(255) NOT NULL,
+            `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+            `rating` float(4,2) unsigned NOT NULL,
+            `author` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
             `genres` varchar(255) NOT NULL,
-            `type` varchar(50) NOT NULL,
-            `summary` text NOT NULL,
+            `booktype` varchar(50) NOT NULL,
+            `summary` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
             `last_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`),
+            UNIQUE KEY `unique_index` (`source`,`name`),
             KEY `source` (`source`),
             KEY `uri` (`uri`),
             KEY `name` (`name`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=latin1 """)
-
-    def process_item(self, item, spider):
-        self.store_db(item)
-        return item
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1""")
 
     def store_db(self, item):
         self.curr.execute("""
-            INSERT INTO raw_mangabooks
-                (source, uri, name, alternative_name, author, genres, type, summary)
-            VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO raw_mangabooks (source, uri, name, rating, author, genres, booktype, summary)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                uri = VALUES(uri),
+                rating = VALUES(rating),
+                author = VALUES(author),
+                genres = VALUES(genres),
+                booktype = VALUES(booktype),
+                summary = VALUES(summary),
+                last_updated = NOW()
         """, (
-            item['source'][0],
-            item['uri'][0],
-            item['name'][0],
-            item['alternative_name'][0],
-            item['author'][0],
-            item['genres'][0],
-            item['type'][0],
-            item['summary'][0]
+            item['source'],
+            item['uri'],
+            item['name'],
+            item['rating'],
+            item['author'],
+            item['genres'],
+            item['booktype'],
+            item['summary']
         ))
+        self.conn.commit()
+
+
+class MangapagePipeline(object):
+
+    def __init__(self):
+        self.create_connection()
+        self.create_table()
+
+    def process_item(self, item, spider):
+        if item.__class__.__name__ == "MangapageItem":
+            self.store_db(item)
+
+        return item
+
+    def create_connection(self):
+        self.conn = mysql.connector.connect(
+            host = 'localhost',
+            user = 'choz',
+            passwd = '123456',
+            database = 'mangascrapers'
+        )
+        self.curr = self.conn.cursor()
+
+    def create_table(self):
+        self.curr.execute("""CREATE TABLE IF NOT EXISTS raw_mangapages (
+            `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            `source` varchar(255) NOT NULL,
+            `uri` varchar(255) NOT NULL,
+            `page` varchar(255) NOT NULL,
+            `images` text NOT NULL,
+            `last_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `unique_index` (`source`,`uri`),
+            KEY `uri` (`uri`),
+            KEY `source` (`source`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1 """)
+
+    def store_db(self, item):
+        self.curr.execute("""
+            INSERT INTO raw_mangapages (uri, source, page, images)
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                page = VALUES(page),
+                images = VALUES(images),
+                last_updated = NOW()
+        """, (
+            item['uri'],
+            item['source'],
+            item['page'],
+            item['images']
+        ))
+
         self.conn.commit()

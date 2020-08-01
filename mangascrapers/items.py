@@ -22,3 +22,10 @@ class MangabookItem(scrapy.Item):
     booktype = scrapy.Field()
     summary = scrapy.Field()
     pass
+
+class MangapageItem(scrapy.Item):
+    source = scrapy.Field()
+    uri = scrapy.Field()
+    page = scrapy.Field()
+    images = scrapy.Field()
+    pass
