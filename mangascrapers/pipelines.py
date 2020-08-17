@@ -45,6 +45,7 @@ class MangabookPipeline(object):
             `genres` varchar(255) NOT NULL,
             `booktype` varchar(50) NOT NULL,
             `summary` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+            `thumbnail` varchar(1000) NOT NULL,
             `last_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`),
             UNIQUE KEY `unique_index` (`source`,`name`),
@@ -55,8 +56,8 @@ class MangabookPipeline(object):
 
     def store_db(self, item):
         self.curr.execute("""
-            INSERT INTO raw_mangabooks (source, uri, name, rating, author, genres, booktype, summary)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO raw_mangabooks (source, uri, name, rating, author, genres, booktype, summary, thumbnail)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
                 uri = VALUES(uri),
                 rating = VALUES(rating),
@@ -64,6 +65,7 @@ class MangabookPipeline(object):
                 genres = VALUES(genres),
                 booktype = VALUES(booktype),
                 summary = VALUES(summary),
+                thumbnail = VALUES(thumbnail),
                 last_updated = NOW()
         """, (
             item['source'],
@@ -73,7 +75,8 @@ class MangabookPipeline(object):
             item['author'],
             item['genres'],
             item['booktype'],
-            item['summary']
+            item['summary'],
+            item['thumbnail']
         ))
         self.conn.commit()
 
@@ -108,17 +111,17 @@ class MangapagePipeline(object):
             `images` text NOT NULL,
             `last_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`),
-            UNIQUE KEY `unique_index` (`source`,`uri`),
+            UNIQUE KEY `unique_index` (`source`,`uri`,`page`),
+            KEY `page` (`page`),
             KEY `uri` (`uri`),
             KEY `source` (`source`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=latin1 """)
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1""")
 
     def store_db(self, item):
         self.curr.execute("""
             INSERT INTO raw_mangapages (uri, source, page, images)
             VALUES (%s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
-                page = VALUES(page),
                 images = VALUES(images),
                 last_updated = NOW()
         """, (

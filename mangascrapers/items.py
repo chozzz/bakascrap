@@ -21,6 +21,7 @@ class MangabookItem(scrapy.Item):
     genres = scrapy.Field()
     booktype = scrapy.Field()
     summary = scrapy.Field()
+    thumbnail = scrapy.Field()
     pass
 
 class MangapageItem(scrapy.Item):
