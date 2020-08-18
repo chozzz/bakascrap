@@ -46,7 +46,8 @@ class MangabookPipeline(object):
             `booktype` varchar(50) NOT NULL,
             `summary` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
             `thumbnail` varchar(1000) NOT NULL,
-            `last_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`),
             UNIQUE KEY `unique_index` (`source`,`name`),
             KEY `source` (`source`),
@@ -66,7 +67,7 @@ class MangabookPipeline(object):
                 booktype = VALUES(booktype),
                 summary = VALUES(summary),
                 thumbnail = VALUES(thumbnail),
-                last_updated = NOW()
+                updated_at = NOW()
         """, (
             item['source'],
             item['uri'],
@@ -109,7 +110,8 @@ class MangapagePipeline(object):
             `uri` varchar(255) NOT NULL,
             `page` varchar(255) NOT NULL,
             `images` text NOT NULL,
-            `last_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`),
             UNIQUE KEY `unique_index` (`source`,`uri`,`page`),
             KEY `page` (`page`),
@@ -123,7 +125,7 @@ class MangapagePipeline(object):
             VALUES (%s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
                 images = VALUES(images),
-                last_updated = NOW()
+                updated_at = NOW()
         """, (
             item['uri'],
             item['source'],
