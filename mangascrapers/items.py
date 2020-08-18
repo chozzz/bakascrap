@@ -28,5 +28,6 @@ class MangapageItem(scrapy.Item):
     source = scrapy.Field()
     uri = scrapy.Field()
     page = scrapy.Field()
-    images = scrapy.Field()
+    imageDirectory = scrapy.Field()
+    imageList = scrapy.Field()
     pass

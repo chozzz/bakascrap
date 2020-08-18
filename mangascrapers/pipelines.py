@@ -3,6 +3,12 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 
+import os
+import re
+import scrapy
+import hashlib
+import urllib.request
+
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
@@ -90,7 +96,8 @@ class MangapagePipeline(object):
 
     def process_item(self, item, spider):
         if item.__class__.__name__ == "MangapageItem":
-            self.store_db(item)
+            processed_images_list = self.process_image_list(item, spider)
+            self.store_db(item, processed_images_list)
 
         return item
 
@@ -119,7 +126,12 @@ class MangapagePipeline(object):
             KEY `source` (`source`)
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1""")
 
-    def store_db(self, item):
+    def store_db(self, item, processed_images_list):
+        strImages = ''
+
+        if len(processed_images_list) > 1:
+            strImages = ' '.join(processed_images_list).strip()
+
         self.curr.execute("""
             INSERT INTO raw_mangapages (uri, source, page, images)
             VALUES (%s, %s, %s, %s)
@@ -130,7 +142,33 @@ class MangapagePipeline(object):
             item['uri'],
             item['source'],
             item['page'],
-            item['images']
+            strImages
         ))
 
         self.conn.commit()
+
+    def process_image_list(self, item, spider):
+        processed_images = []
+
+        if 'imageList' in item and 'imageDirectory' in item:
+            for idx,image_url in enumerate(item['imageList']):
+                directory = item['imageDirectory']
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+
+                filename, ext = os.path.splitext(image_url)
+
+                filename = "{}/{}{}".format(directory, idx, ext)
+
+                print("Saving manga image to " + filename)
+                processed_images.append(filename)
+
+                opener = urllib.request.build_opener()
+                opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36')]
+                urllib.request.install_opener(opener)
+                urllib.request.urlretrieve(image_url, filename)
+
+        return processed_images
+
+    def file_path(self, request, response=None, info=None):
+        return os.path.join(info.spider.CRAWLER_IMAGES_STORE, request.meta['this_prod_img_folder'], request.meta['img_name'])
