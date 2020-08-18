@@ -153,22 +153,20 @@ class MangapagePipeline(object):
         if 'imageList' in item and 'imageDirectory' in item:
             for idx,image_url in enumerate(item['imageList']):
                 directory = item['imageDirectory']
+
                 if not os.path.exists(directory):
                     os.makedirs(directory)
 
                 filename, ext = os.path.splitext(image_url)
-
                 filename = "{}/{}{}".format(directory, idx, ext)
-
-                print("Saving manga image to " + filename)
                 processed_images.append(filename)
 
-                opener = urllib.request.build_opener()
-                opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36')]
-                urllib.request.install_opener(opener)
-                urllib.request.urlretrieve(image_url, filename)
+                if not os.path.exists(filename):
+                    print("Saving manga image to " + filename)
+
+                    opener = urllib.request.build_opener()
+                    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36')]
+                    urllib.request.install_opener(opener)
+                    urllib.request.urlretrieve(image_url, filename)
 
         return processed_images
-
-    def file_path(self, request, response=None, info=None):
-        return os.path.join(info.spider.CRAWLER_IMAGES_STORE, request.meta['this_prod_img_folder'], request.meta['img_name'])
