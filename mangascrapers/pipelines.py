@@ -4,10 +4,8 @@
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 
 import os
-import re
 import scrapy
-import hashlib
-import urllib.request
+from .utils import utils
 
 
 # useful for handling different item types with a single interface
@@ -27,6 +25,7 @@ class MangabookPipeline(object):
 
     def process_item(self, item, spider):
         if item.__class__.__name__ == "MangabookItem":
+            self.process_thumbnail(item, spider)
             self.store_db(item)
 
         return item
@@ -86,6 +85,18 @@ class MangabookPipeline(object):
             item['thumbnail']
         ))
         self.conn.commit()
+
+    def process_thumbnail(self, item, spider):
+        if 'thumbnail' in item and 'uri' in item:
+            image_url = item['thumbnail']
+            uri = item['uri']
+            filename, ext = os.path.splitext(image_url)
+            filename = "{}/thumbnail{}".format(uri, ext)
+
+            utils.save_image_from_url(image_url, filename)
+
+        return item
+
 
 
 class MangapagePipeline(object):
@@ -150,23 +161,14 @@ class MangapagePipeline(object):
     def process_image_list(self, item, spider):
         processed_images = []
 
-        if 'imageList' in item and 'imageDirectory' in item:
+        if 'imageList' in item and 'uri' in item and 'page' in item:
             for idx,image_url in enumerate(item['imageList']):
-                directory = item['imageDirectory']
-
-                if not os.path.exists(directory):
-                    os.makedirs(directory)
-
+                uri = item['uri']
+                page = item['page']
                 filename, ext = os.path.splitext(image_url)
-                filename = "{}/{}{}".format(directory, idx, ext)
+                filename = "{}/{}/{}{}".format(uri, page, idx, ext)
                 processed_images.append(filename)
 
-                if not os.path.exists(filename):
-                    print("Saving manga image to " + filename)
-
-                    opener = urllib.request.build_opener()
-                    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36')]
-                    urllib.request.install_opener(opener)
-                    urllib.request.urlretrieve(image_url, filename)
+                utils.save_image_from_url(image_url, filename)
 
         return processed_images

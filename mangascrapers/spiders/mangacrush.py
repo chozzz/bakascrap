@@ -12,11 +12,8 @@ class MangacrushSpider (CrawlSpider):
     start_urls = []
     rules = []
 
-    images_store = "/efs/mangas/en"
-
     custom_settings = {
         'USER_AGENT': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36',
-        'IMAGES_STORE': images_store
     }
 
     def __init__ (self, uri='', **kwargs):
@@ -75,7 +72,6 @@ class MangacrushSpider (CrawlSpider):
             items['source'] = self.name
             items['uri'] = uriname
             items['page'] = pagename
-            items['imageDirectory'] = self.images_store + '/' + uriname + '/' + pagename
             items['imageList'] = list( map((lambda x: x.strip('\n')), imageList))
 
         return items
